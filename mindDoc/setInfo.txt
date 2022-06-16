@@ -1,0 +1,351 @@
+更改相关信息 资料 头像 收货管理
+个人资料
+    1.持久层mapper
+        规划SQL语句
+            update t_user set phone=?,email=?,gender=?,modified_user=?,modified_time=? where uid=?
+            //根据用户名查询用户数据 select * from t_user where uid=？   业务层更新辅助
+
+        设计接口和抽象方法
+            更新用户信息方法的定义UserMapper
+            抽象方法映射 UserMapper.xml文件中进行映射编写
+            测试
+
+    2.业务层service
+        1     1.1当打开页面时获取用户信息并且填充到对应的文本框中（查看）
+            1.2用户是否点击修改按钮，若检测到则执行修改用户信息操作（修改）
+            2.打开页面时有可能找不到用户数据，点击删除按钮之前要再次检测用户数据是否存在（健壮性，比如用户正在修改界面，管理员删除该用户数据）
+
+        2 设计接口与抽象方法
+            两个功能的模块，对应两个抽象方法设计
+
+        3实现抽象方法
+            在UserServiceImpl类中添加两个抽象方法的具体实现
+
+        4.在测试类中进行单元测试
+
+    3.控制层controller
+        1.处理异常
+        2.设计请求
+            1.设置一打开页面就自动发送当前用户数据的查询
+            请求路径：/user/get_by_uid
+            请求方式：GET
+            请求数据：HttpSession session
+            //请求数据要看业务层参数列表为什么 上述业务层需要session
+            响应结果：JsonResult<User>
+
+            2.点击修改按钮发送用户的数据修改操作请求的设计
+            请求路径：/user/change_info
+            请求方式：POST
+            请求数据：User user,HttpSession session
+            //请求数据要看业务层参数列表为什么
+            响应结果：JsonResult<Void>
+
+        3.处理请求
+            在USerController中处理请求
+
+    4.前端
+        1.在打开userdata.html页面自动发送ajax请求（get_by_uid），查询到的数据填充到该页面
+        2.在检测到用户点击了修改按钮后发送一个ajax请求(change_info)
+
+上传头像
+    记住文件的路径 保存头像即将对应的对象文件保存在操作系统上，将该文件路径记录下来，记录路径便捷
+    打开文件依据路径找该文件，数据库中保存该文件的路径即可
+    1.持久层mapper
+        规划SQL语句  更新avatar字段的sql语句
+            update t_user set avatar=?,modified_user=?,modified_time=? where uid=?
+
+        设计接口和抽象方法
+            1UserMapper接口中定义抽象方法用于修改用户头像  @Param("SQL映射文件中#{}井号里面占位符的变量名")，当SQL语句中的占位符与映射的接口方法参数名不一致时，
+                                                        要将某个参数强行注入到某个占位符变量上时，可以使用@Param注解标注映射关系
+                                                        解决数据库与服务端名称不一致问题
+            2抽象方法映射 UserMapper.xml文件中进行映射编写
+            3测试
+
+    2.业务层service
+        1规划异常
+            1.用户数据不存在或找不到对应用户数据 UserNotFoundException
+            2.更新时未知异常产生 UpdateException
+
+        2 设计接口与抽象方法
+            一个功能的模块，对应一个抽象方法设计
+
+        3实现抽象方法
+            在UserServiceImpl类中添加一个抽象方法的具体实现
+
+        4.在测试类中进行单元测试
+
+    3.控制层controller
+        1.1规划异常
+            FileUploadException文件上传的异常（父类）继承RuntimeException
+            下面四个类继承上面
+            FileEmptyException文件为空的异常
+            FileSizeException文件大小超出限制
+            FileTypeException文件类型异常
+            FileUploadException文件读写异常
+        1.2处理异常
+            BaseController类中统一处理
+            在异常统一处理方法的参数列表上增加新的异常处理作为其参数@ExceptionHandler({ServiceException.class,FileUploadException.class})
+        2.设计请求
+            1.设置一打开页面就自动发送当前用户数据的查询
+            请求路径：/user/change_avatar
+            请求方式：POST(GET请求提交数据2kb左右)
+            请求数据：HttpSession session,MultipartFile file
+            //请求数据要看业务层参数列表为什么 上述业务层需要session,file(存储图片路径)
+            响应结果：JsonResult<String>
+                （若图片上传成功，将图片存储）
+
+        3.处理请求
+            在USerController中处理请求
+
+    4.前端
+        1.若直接使用表单进行文件的上传，需要给表单显示的添加一个属性enctype="multipart/form-data"声明出来，不会将目标文件数据结构做修改再上传 不同于字符串
+        2.更改默认大小限制，SpringMVC默认为1mb文件可进行上传，手动修改SpringMVC默认上传文件大小
+          1直接在配置文件中配置：(在resources中的application中写
+            spring.servlet.multipart.max-file-size=10MB
+            spring.servlet.multipart.max-request-size=15MB
+          2.采用java代码形式设置文件上传大小限制，主类中进行配置，可定义一个方法，必须用@Bean修饰来修饰。在类前面添加@Configuration注解进行修饰类
+            MultipartConfigElement类型。
+        3.显示头像
+            在页面中通过ajax请求提交文件，提交完成后返回了json串解析出data中数据，设置到img头像标签的src属性上即可
+            原始数据<img id="img-avatar" src="../images/index/user.jpg" class="img-responsive" />
+            ·serialize()可将表单数据自动拼接为key=value的结构进行提交给服务器，一般提交普通的控件类型中的数据（text\password\radio）等
+            ·FormData类：将表单当中的数据保持原有的数据结构进行数据的提交
+                new FormData($("#form")[0]); //将form表单当中的某一个元素的整体值作为FormData中的数据，将数据格式放在对象中
+                文件类型数据可以用FormData对象进行存储
+            ·ajax默认处理数据时按照字符串形式进行处理，以及默认会采用字符串形式进行提交数据，关闭两个默认功能
+
+        4.登录后显示头像
+            持久保存头像，将头像保存在cookie中
+            在更新头像成功后将服务器返回的头像路径保存在客户端cookie对象中，然后每次检测到用户打开上传头像页面，
+            在该页面中通过ready（）方法来自动检测去读取cookie中头像，并设置到src属性中
+                1.设置cookie中的值 因为在登录时cookie保存头像数据，所以在登录方面写
+                    导入cookie.js文件
+                   		<script src="../bootstrap3/js/jquery.cookie.js" type="text/javascript" charset="utf-8"></script>
+                    调用cookie.js文件
+                        $.cookie(key,value,time);//time单位天
+                2.在upload.html中引入cookie.js文件
+                    导入cookie.js文件
+                        <script src="../bootstrap3/js/jquery.cookie.js" type="text/javascript" charset="utf-8"></script>
+                3.在upload.html页面通过ready（）自动读取cookie中的数据  （ready不能与ajax嵌套）
+
+        5.显示最新的头像
+            更改完头像后，将最新的头像地址，再次保存到cookie中，同名保存会覆盖有cookie中值。
+
+新增收货地址
+    完成新建收获地址的数据表单创建
+    创建实体类
+        address类，在类中定义表的相关字段，采用驼峰命名方式，最后再去继承父类BaseEntity
+    1.持久层
+        1.功能开发
+            功能模块：新增收货地址-列表展示-设置默认收货地址-删除收货地址-修改收货地址。
+        2.规划SQL语句
+            1.对应插入语句
+                INSERT INTO t_address(除了aid字段列表) values (字段值列表)
+            2.一个用户的收货地址最多只能有20条数据对应，在插入用户之前先做查询操作
+                SELECT count(*) from t_address where uid=?
+        3.接口与抽象方法
+            创建一个接口Address在该接口来定义上面两个SQL语句抽象方法定义
+        4.配置SQL映射
+            创建一个名称交AddressMapper.xml的映射文件，在该文件中添加抽象方法的映射，映射到SQL语句中
+        5.测试
+            test下的mapper文件夹下创建AddressMapperTests的测试类
+    2.业务层
+        1.规划异常
+            若用户第一次插入用户收货地址，规则：当用户插入的地址为第一条 要将当前的地址作为默认收货地址
+            若查询到的统计总数为0则将当前地址is_default值设为1，查询统计结果为0非异常
+
+            若查到结果>20抛出业务控制的异常AddressCountLimitException异常
+
+            插入数据时未知异常
+        2.接口与抽象方法
+            创建IAddressService接口，在其中定义业务的抽象方法
+        3.实现抽象方法
+            AddressServiceImpl实现类，实现接口中的抽象方法
+        4.在测试类中进行单元测试
+            AddressServiceTestsce测试业务功能
+    3.控制层
+        1.处理异常
+            业务层抛出了收货地址总数超标的异常 在BaseController类捕获
+        2.设计请求
+            请求路径：/user/add_new_address
+            请求方式：POST(GET请求提交数据2kb左右)
+            请求数据：Address address,HttpSession session
+            //请求数据要看业务层参数列表是什么
+            响应结果：JsonResult<Void>
+        3.处理请求在AddressController中处理请求与响应
+    4.前端
+        1.在打开addAddress.html页面自动发送ajax请求（get_by_uid），查询到的数据填充到该页面
+        2.在检测到用户点击了修改按钮后发送一个ajax请求(change_info)
+
+获取省市区列表
+    1获取省市区列表数据库
+        parent属性表示父区域的代码号，省的父代码号+86
+    2获取省市区列表实体类
+    3.持久层
+        1.功能开发
+            查询语句，根据父代号查询
+        2.规划SQL语句
+            SELECT * FROM t_dict_district where parent=? order by code ASC
+        3.接口与抽象方法
+            抽象方法定义DistrictMapper
+        4.配置SQL映射
+            DistrictMapper.xml
+        5.测试
+
+    4.业务层
+        1.规划异常
+        2.接口与抽象方法
+            创建接口IDistrictService，定义抽象方法
+        3.实现抽象方法
+            DistrictServiceImpl实现类，实现抽象方法
+        4.在测试类中进行单元测试
+
+    5.控制层
+
+        1.设计请求
+                  1.
+                  请求路径：/district/
+                  请求方式：GET(GET请求提交数据2kb左右)
+                  请求数据：String parent
+                  //请求数据要看业务层参数列表是什么
+                  响应结果：JsonResult<List<District>>
+        2.处理请求在DistrictController中处理请求
+            将请求路径：/district/ 放在拦截器白名单 patterns.add("/district/**");
+        3.请求服务器，访问localhost:8080/district?parent=86 测试
+
+    6.前端
+              1.在打开addAddress.html页面
+               //前端方式用js完成省市区列表加载的js代码 <script type="text/javascript" src="../js/distpicker.data.js"></script>   <script type="text/javascript" src="../js/distpicker.js"></script>
+              2.检查前端页面在提交省市区数据时是否有相关的name属性和id属性 name属性让address进行映射，让name自动映射到请求处理方法上 id添加点击事件的列表
+              3.运行前端看是否可正常保存数据（除省市区外）
+
+获取省市区名称：
+    1.持久层
+        1.根据当前code（省市区）来获取省市区的名称 对应一条查询sql语句
+            SELECT * FROM t_dist_district where code = ？
+        2.在DistrictMapper接口中定义
+        3.在DistrictMapper.xml文件中添加抽象方法映射 将SQL语句与抽象方法进行关联
+        4.单元测试
+
+    2.业务层
+        1.无异常要处理
+        2.定义对应业务层IDistrictService接口中抽象方法getNameByCode
+        3.在子类中实现抽象方法
+        4.测试
+
+    3.控制层->业务层优化，因为地址要调用该方法，即地址业务层调用该部分代码
+        1.添加地址层依赖于IDistrictService层
+        2.在addNewAddress方法中将districtService接口中获取到的省市区数据转移到address对象，该对象中就包含了所有的用户收货地址的数据，该对象更加完整
+
+    4.前端
+        1.addAddress.html中编写对应省市区展示，根据用户不同选择来显示对应的标签中的内容
+        2.编写相关事件代码
+
+收获地址列表展示
+    1.持久层
+        1.数据库数据查询操作
+            SELECT * FROM t_address WHERE uid=？ ORDER BY is_default DESC,created_time DESC
+        2.接口设计抽象方法
+            关联AddressMapper 写抽象方法findByUid
+        3.在AddressMapper.xml文件中添加对应sql语句映射
+
+    2.业务层
+        1.不用抛异常
+        2.设计业务层IAddressService接口，抽象方法
+        3.AddressServiceImpl实现类中实现该方法的逻辑
+        4.单元测试
+
+    3.控制层
+        1.请求设计
+                  请求路径：/address/
+                  请求方式：GET(GET请求提交数据2kb左右)
+                  请求数据：HttpSession session
+                  //请求数据要看业务层参数列表是什么
+                  响应结果：JsonResult<List<Address>>
+        2.处理请求在AddressController中处理请求即实现请求方法
+            将请求路径：/district/ 放在拦截器白名单 patterns.add("/district/**");
+        3.请求服务器，访问localhost:8080/web/login.html 再测试
+
+    4.前端页面
+        1.在address.html中编写查询用户收货地址数据展示列表
+
+设置默认收货地址
+    1.持久层
+        1.sql规划语句
+            1.检测当前用户想设置为默认收货地址的这条数据是否存在
+                SELECT * FROM t_address WHERE aid=？
+            2.在修改用户的默认收货地址之前，先将所有的收货地址设置为非默认
+                UPDATE t_address set is_default=0 where uid=?
+            3.将用户当前选择中的该条记录设置为默认收货地址
+                UPDATE t_address set is_default=1,modified_user=?,modified_time=? where aid=?
+        2.设计抽象方法
+            在AddressMapper接口中进行定义声明 findByAid updateNonDefault updateDefaultByAid。
+        3.配置sql映射
+            AddressMapper.xml中配置
+        4.单元测试
+
+    2.业务层
+        1.异常规划
+            1.执行更新时产生UpdateException异常
+            2.访问数据非当前登录用户的收货地址异常 非法访问AccessDeniedException
+            3.收货地址不存在异常 AddressNotFoundException
+
+        2.业务层抽象方法设计
+            在接口IAddressService编写抽象方法
+
+        3.实现抽象方法
+            在AddressServiceImpl类中进行开发和业务设计
+
+        4.单元测试
+
+    3.控制层
+        1.根据业务层抛出的异常在控制层BaseController处理
+        2.设计请求
+            请求路径：/address/{aid}/set_default
+            请求方式：GET(GET请求提交数据2kb左右)
+            //@PathVariable()当参数占位符与想要注入的参数的值不一致，强行匹配
+            请求数据：@PathVariable("aid") Integer aid,HttpSession session
+            //请求数据要看业务层参数列表是什么
+            响应结果：JsonResult<Void>
+        3.完成请求方法
+         AddressController类中编写请求处理方法
+        4.打开浏览器先登录在访问请求路径localhost:8080/address/8/set_default
+
+    4.前端页面
+        address.html页面点击“设置默认”按钮，发送ajax请求
+        给设置默认收货地址按钮加一onlick属性 指向一个方法的调用，在该方法来完成ajax请求的方法
+        完成setDefault
+        测试
+
+删除收货地址
+    1.持久层
+            1.在删除前判断该数据是否存在，判断该条地址数据归属是否为当前用户 无需重复开发
+            2.执行删除收货地址信息
+            delete * from t_address where uid=？
+            3.若用户删除默认收货地址，将剩下地址中最新的一条设置为默认收货地址（modified_time）
+        #limit（n-1)*n,pageSize
+            select * from t_address where uid=？ order by modified_time DESC limit 0,1 //0为跳过的
+            4.若用户本身只有一条收货地址数据，删除后其他操作无需进行
+
+        2.设计抽象方法
+        在AddressMapper接口中进行抽象方法设计
+        3.映射
+        AddressMapper.xml文件中映射
+
+    2.业务层
+        1.规划异常 执行删除时产生未知异常导致数据无法删除成功，DeleteException
+        2.抽象方法设计 在IAddressService接口中进行设计抽象方法
+
+    3.控制层
+        1.处理异常DeleteException
+        2.设计请求处理
+            请求路径：/address/{aid}/delete
+            请求方式：POST
+            //@PathVariable()当参数占位符与想要注入的参数的值不一致，强行匹配
+            请求数据：@PathVariable("aid") Integer aid,HttpSession session
+            //请求数据要看业务层参数列表是什么
+            响应结果：JsonResult<Void>
+        3.编写请求处理方法实现
+
+    4.前端
+        在address.html中添加删除事件。'<td><a onclick="deleteByAid(#{aid})" class="btn btn-xs add-del btn-info"><span class="fa fa-trash-o"></span> 删除</a></td>'

@@ -1,0 +1,27 @@
+//测试 http://localhost:8080/user/reg?username=Tom&password=123456
+
+一个功能先分为持久层 业务层 控制层 前端
+
+entity:实体类
+mapper：用户模块的持久层接口 也就是dao层 与数据库进行交互的操作封装在该层
+service：业务层  impl存放相关实现类
+                ex异常类
+                service下放接口直接放在最外层
+
+    控制层 涉及到创建响应 响应（含状态码 状态描述信息 数据）将这部分功能封装在一个类JsonResult中，
+    将这类作为方法返回值返回给前端浏览器
+    向后端服务器发送请求，目的将用户数据发送到数据库端
+
+设计请求 要依据当前业务功能模块进行请求的设计
+    请求路径：/user/reg
+    请求参数：User user
+    请求类型： POST
+    响应结果： JsonResult<void>
+
+处理请求
+    1.创建一个控制层对应的类UserController类，依赖于业务层接口。
+
+注册:
+    1.在entity实体类中的User 添加对象；
+    2.在resource 中的mapper中的UserMapper.xml中添加名字；
+    3.在UserServiceTests中set；

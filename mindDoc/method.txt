@@ -1,0 +1,108 @@
+注册：
+1.在entity实体类中的User 添加对象；
+2.在resource 中的mapper中的UserMapper.xml中添加名字；
+3.在UserServiceTests中set；
+
+一个功能的流程
+1.持久层
+        1规划要执行的SQL语句
+            根据用户uid修改用户password值(根据用户数据时间)
+                update t_user set password=?,modified_user=?,modified_time=? where uid=?
+             根据uid查用户数据，在修改密码前，保证该用户存在（查询），检测是否被标记为已经删除，检测输入原始密码是否正确
+                select * from t_user where uid=?
+        2设计接口和抽象方法
+            1UserMapper接口，将以上两个方法抽象定义出来，将来映射到sql语句上
+            2将接口配置到映射文件中 UserMapper.xml
+            3做单元测试功能测试
+
+    2.业务层
+        1规划异常
+            1.用户源密码错误，is_delete==1，uid找不到，在用户没有发现的异常
+            2.update在更新时候可能产生未知异常
+        2设计接口与抽象方法
+            1用户修改密码的核心方法在IUserService中
+            2在实现类中实现方法 UserServiceImpl
+            3在单元测试类中编写测试方法
+
+    3.控制层
+         1.处理异常
+               UpdateException新的异常要配置在统一的异常处理方法中，在父类BaseController中配置
+
+         2.设计请求
+                请求路径：/user/change_password
+                请求方式：POST
+                请求数据：(在session中获取：String uid,String username)
+                            String oldPassword,String newPassword,HttpSession session
+                //上述请求数据名要和表单中的name属性值保持一致
+                响应结果：JsonResult<Void>
+                //不用有返回结果 只需修改成功即可
+         3.处理请求（编写业务逻辑代码）
+                在UserController类中编写处理请求的方法
+
+    4.修改前端
+        .html添加ajax请求的处理
+
+ajax格式例子
+<script type="text/javascript">
+/*
+	1.给按钮添加监听是否被点击 调用click方法自动完成监听click方法要求传递一个function函数
+		function函数里调用ajax函数，ajax函数传递方法体方法体要求为一段大括号，再讲参数列表显示的结构写出来
+
+		data可调用序列化自动完成序列化某一个表单 用id选择器选择form表单，再去序列化一个key value键值对
+*/
+		$("#btn-login").click(function () {
+			$.ajax({
+				url:"/user/login",
+				type:"POST",
+				data:$("#form-login").serialize(),
+				dataType:"JSON",
+				success:function (json) {
+					/*alert(json.state)*/
+					if(json.state==200){
+						alert("登录成功");
+						//跳转到系统主页
+						//相对路径来确定跳转页面  ./ 上级../
+						location.href="index.html";
+					}else if(json.state==5001){
+						alert("用户数据不存");
+					}
+					else if(json.state==5002){
+						alert("用户名的密码错误");
+					}
+				},
+				error:function (xhr) {
+					alert("登录时产生未知的异常"+xhr.message);//自动产生错误描述信息
+				}
+			})
+		})
+		</script>
+
+
+？？？功能
+    完成数据表单创建
+    创建实体类
+    1.持久层
+        1.功能开发
+        2.规划SQL语句
+        3.接口与抽象方法
+        4.配置SQL映射
+        5.测试
+    2.业务层
+        1.规划异常
+        2.接口与抽象方法
+        3.实现抽象方法
+        4.在测试类中进行单元测试
+    3.控制层
+        1.规划异常
+        2.处理异常
+        3.设计请求
+            1.
+            请求路径：/user/change_。。。
+            请求方式：POST(GET请求提交数据2kb左右)
+            请求数据：HttpSession session
+            //请求数据要看业务层参数列表是什么
+            响应结果：JsonResult<String>
+        4.处理请求在？？？Controller中处理请求
+    4.前端
+        1.在打开？？？.html页面自动发送ajax请求（get_by_uid），查询到的数据填充到该页面
+        2.在检测到用户点击了修改按钮后发送一个ajax请求(change_info)

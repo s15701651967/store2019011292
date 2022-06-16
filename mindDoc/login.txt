@@ -1,0 +1,100 @@
+登录：
+    登录首先从前端输入数据，以JSON格式传入后端，然后通过控制层，业务层，最终到达持久层，与数据库进行查询，若数据库中信息存在，则告知前端信息匹配。
+    登录成功跳转到主页index.html页面，跳转在前端用jQuery。
+
+    登录持久层
+    将业务功能具体化为sql语句只做增删改查
+    规划需要执行的sql语句
+        根据用户名提交的账号密码进行select查询
+
+    登录业务层
+        service层进行密码处理
+        业务层规划异常
+            规划异常 密码错误业务异常  用户名未找到异常 运行时业务层异常
+            编写异常在业务层
+
+        设计业务层接口与抽象方法  抽象方法实现
+            1.直接在IUserService接口中编写抽象方法：登录功能User login(String username,String password)
+            将当前登录成功的用户数据以当前用户对象形式返回，状态管理：将数据保存在cookie或session中，避免重复度高的数据多次频繁操作数据进行获取（用户名，id放在session中，用户头像cookie中cookie存在客户端
+            2.需要在实现类UserServiceImpl中实现父接口IUserService中的抽象方法User login(String username,String password)
+            3.在测试类中测试业务层登录方法是否可以执行通过UserServiceTests
+
+
+    登录控制层
+        1.处理异常
+            业务层service层抛出的异常是什么，要在统一异常处理类中统一捕获和处理，若业务层service层抛出的异常类型已经在统一异常处理类出现过，不用重复添加
+            业务层吧异常抛出来，被控制层捕捉并处理，设置相应提示信息作为结果，响应给前端
+        2.设计请求
+            请求路径：/user/login
+            请求方式：POST
+            请求数据：String username,String password
+            响应结果：JsonResult<User>
+        3.处理请求（编写业务逻辑代码）
+            在UserController类中编写处理请求的方法
+
+    登录前端
+        1.在login.html页面中依据前面所设置的请求来发送ajax请求。格式固定，参数值动态
+
+        用户会话session
+            session对象主要存储在服务器端，保存服务器的临时数据对象，所保存数据可在整个项目通过访问获取，
+            将session数据看做一个共享的数据，为了不再依赖某个请求的方法
+            首次登录获取到的数据（用户的数据）转移到session对象即可。session.getAttrbute("key")可以将获取session中的数据这种行为进行封装
+            封装在父类baseController类中，因为控制层均继承baseController。
+                1.封装session对象中数据的获取（封装在父类中 ），数据的设置 （ 当用户登录成功后进行数据设置，设置到全局的session对象）
+                2.在父类中封装两类数据:获取uid与username对应两个方法  用户头像封装在cookie中
+                3.在登录方法中将数据封装在session对象中。服务器本身自动创建有session对象，已经是一个全局的session对象。SpringBoot直接使用session对象，
+                直接将HttpSession类型的对象作为请求处理方法参数、会自动将全局的session对象注入到请求方法的session中
+
+        拦截器  将所有请求统一拦截到拦截器中，可以拦截器中定义过滤规则 ，若不满足系统设置的过滤规则，统一处理重新打开login.html （重定向或转发）
+        用重定向
+        SpringBoot写拦截器：依靠springMVC完成，它提供了HandlerInterceptor接口，定义一个拦截器
+            首先自定义一个类 再让类实现接口
+                1.首先自定义一个类 在该类中实现HandlerInterceptor接口
+                *    preHandle 在调用所有处理请求方法前被自动调用执行的方法
+                    postHandle 在Model and View对象返回之后被调用的方法
+                    afterCompletion 在整个请求所有关联的资源被执行完毕后执行的方法
+                2.注册过滤器：白名单（哪些资源可在不登录情况下访问login.html\register.html\index.html\product)
+                            黑名单（在用户登录情况下才可访问的页面资源如修改账号密码界面）
+                3.注册过滤器技术：用WebMvcConfigure接口，可将用户定义的拦截器进行注册，才可保证拦截器生效使用
+                        定义一个类，让该类实现WebMVCConfigure接口。配置信息放在config包结果下
+                        addInterceptors 将自定义拦截器进行注册
+
+修改密码：
+    用户提交原始密码 新密码，根据当前登录的用户进行信息的修改操作
+    1.修改密码持久层
+        规划要执行的SQL语句
+            根据用户uid修改用户password值(根据用户数据时间)
+                update t_user set password=?,modified_user=?,modified_time=? where uid=?
+             根据uid查用户数据，在修改密码前，保证该用户存在（查询），检测是否被标记为已经删除，检测输入原始密码是否正确
+                select * from t_user where uid=?
+        设计接口和抽象方法
+            UserMapper接口，将以上两个方法抽象定义出来，将来映射到sql语句上
+            将接口配置到映射文件中 UserMapper.xml
+            做单元测试功能测试
+
+    2.修改密码业务层
+        规划异常
+            1.用户源密码错误，is_delete==1，uid找不到，在用户没有发现的异常
+            2.update在更新时候可能产生未知异常
+        设计接口与抽象方法
+            用户修改密码的核心方法在IUserService中
+        在实现类中实现方法 UserServiceImpl
+            在单元测试类中编写测试方法
+
+    3.修改密码控制层
+         1.处理异常
+               UpdateException新的异常要配置在统一的异常处理方法中，在父类BaseController中配置
+
+         2.设计请求
+                请求路径：/user/change_password
+                请求方式：POST
+                请求数据：(在session中获取：String uid,String username)
+                            String oldPassword,String newPassword,HttpSession session
+                //上述请求数据名要和表单中的name属性值保持一致
+                响应结果：JsonResult<Void>
+                //不用有返回结果 只需修改成功即可
+         3.处理请求（编写业务逻辑代码）
+                在UserController类中编写处理请求的方法
+
+    4.修改密码前端
+        password.html添加ajax请求的处理

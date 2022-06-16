@@ -1,0 +1,43 @@
+订单
+    在线支付后：
+
+1.订单数据库创建
+2.实体类创建
+3.持久层
+    1.sql语句
+        1.将数据插入到订单表
+            INSERT INTO t_order ( uid, recv_name, recv_phone, recv_province, recv_city, recv_area, recv_address, total_price, status, order_time, pay_time, created_user, created_time,modified_user, modified_time )VALUES ( #对应字段的值列表 )
+        2.将数据插入到订单项的表中
+            INSERT INTO t_order_item ( oid, pid, title, image, price, num, created_user, created_time, modified_user, modified_time )VALUES ( #对应字段的值列表 )
+
+    2.设计接口和抽象方法
+        1.创建OrderMapper接口，接口添加SQL对象抽象方法
+        2.映射SQL语句   OrderMapper.xml
+
+4.业务层
+    1.在IAddressService接口中定义根据收货地址id获取收货地址数据
+    2.在AddressServiceImpl实现抽象方法
+    3.在service包下创建IOrderService接口添加抽象方法用于创建订单
+    4.OrderServiceImpl实现类
+
+5.控制层
+    1.设计请求
+        /order/create
+        aid,session,cids
+        POST
+        JsonResult<Order>
+    2.创建OrderController类
+
+
+
+
+
+
+
+
+
+
+
+
+
+

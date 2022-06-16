@@ -1,0 +1,114 @@
+购物车
+    加入购物车
+    1.数据库创建
+    2.创建实体类
+    3.持久层
+        1.规划要执行的sql语句
+            1.向购物车表中加入数据
+            2.当当前商品已经存在购物车中，直接更新num数量
+            3.插入或更新执行哪个语句取决于数据库中是否由当前购物车商品数据，要查询确定
+        2.设计接口与抽象方法
+            1.CartMapper接口文件
+        3.sql映射
+            1.CartMapper.xml
+    4.业务层
+        1.规划异常
+            1.插入产生异常
+            2.更新数据时产生异常
+        2.规划接口和抽象方法
+            1.ICartService接口
+            2.CartServiceImpl接口实现
+    5.控制层
+        1.设计请求处理
+            /cart/add_to_cart
+            GET
+            pid,amount,HttpSession session
+            JsonResult<Void>
+    6.前端
+        在product.html页面给加入购物车按钮添加点击事件，并发送ajax请求
+
+展示购物车列表
+    1.持久层
+        1.1规划sql语句
+            //多表查询若字段不重复则无需显示该声明字段属于哪张表
+            SELECT
+                cid,uid,pid,
+                t_cart.price,
+                t_cart.num,
+                t_product.title,
+                t_product.image,
+                t_product.price AS realprice
+            FROM
+                t_cart LEFT JOIN t_product ON t_cart.pid=t_product.id  //cart主表
+            WHERE uid=#{uid}
+            ORDER BY t_cart.create_Time DESC
+
+        2.VO value object值对象，当进行SELECT查询时，当查询结果为数据多张表中的内容，此时发现结果集无法直接使用
+            某个POJO实体类来接收，POJO实体类无法包含多表查询出来的结构
+        解决方法：重新构建一个新的对象，该对象用户存储所查询出来的结果集对应的映射，将该对象称为值对象。
+
+        3.映射SQL语句
+
+    2.业务层
+        1.编写业务层接口方法
+        2.在实现类中实现此方法
+    3.控制层
+        1.设计请求
+            /cart/
+            session
+            GET
+            JsonResult<List<CartVO>>
+        2.实现请求处理方法编写
+    4.前端页面
+        1.打开购物车界面，自动发送一个请求
+        给form标签添加action="orderConfirm.html"属性、tbody标签添加id="cart-list"属性、
+        结算按钮的类型改为type="button"值。如果以上属性值已经添加过无需重复添加。
+
+增加购物车商品数量
+    1.持久层
+        1.更新t_cart中的num值
+        2.根据cid值查询当前购物车该条数据是否存在
+            UPDATE t_cart SET num=?, modified_user=?, modified_time=? WHERE cid=?
+        3.配置sql映射 cartMapper.xml
+
+    2.业务层
+        1.更新时产生更新异常
+        2.查询数据是否有访问权限
+        3.要查询的数据不存在
+        4.接口和抽象方法
+            结合Mapper层中的findByCid和updateNumByCid增加购物车商品数目
+
+    3.控制层
+        1.处理异常
+        2.设计请求
+            /cart/{cid}/num/add
+            Integer cid,HttpSession session
+            Post
+            JsonResult<Integer>
+
+显示勾选的购物车数据
+    1.持久层
+        1.规划sql语句
+            用户在购物车列表中通过随机勾选相关商品，在点击结算按钮后，跳转到结算页面，该页面展示用户在上个页面勾选的购物车
+            对应数据，列表展示，展示内容在购物车的表
+            两个页面需要用户勾选的多个cid传递给下一个页面
+            SELECTcid, uid, pid, t_cart.price, t_cart.num, t_product.title, t_product.price AS realPrice, t_product.image FROMt_cart LEFT JOIN t_product ON t_cart.pid = t_product.id WHEREcid IN (?, ?, ?) ORDER BY t_cart.created_time DESC
+    2.业务层
+        1.业务层接口中抽象设方法
+    3.控制层
+        1.
+        /cart/list
+        Integer cids,HttpSession session
+        POST
+        JsonResult<List<CartVo>>
+        2.完成请求处理方法的定义和声明
+    4.前端
+        1.将cart.html页面中结算按钮属性改为type="submit"
+        2.orderConfirm.html页面中添加自动加载从上个页面中传递过来的cids数据，再去请求ajax，进行填充当前页面的某个区域中
+
+购物车页面显示收货地址列表
+    1.收货地址存放在SELECT下拉列表中，将查询到的当前登录用户的收货地址动态加载至该下拉列表中，
+    从数据库的角度，为一SELECT查询语句
+    已经编写根据用户根据uid查询当前用户的收货地址数据
+    2.OrderConfirm.html页面，收货地址自动加载且展示，将方法逻辑放在reaady中
+
