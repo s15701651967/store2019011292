@@ -355,6 +355,18 @@ public class UserController extends BaseController {//在控制层抽离一个�
 
     }
 
+     @RequestMapping("get_levelByBid")
+    public JsonResult<User> getBidLevel(Integer businessId){
+        User data= userService.getBidLevel(businessId);
+//        data.setUsername(getUsernameFromSession(session));
+////        data.getPurse();
+//        data.setModifiedUser(getUsernameFromSession(session));
+//        data.setModifiedTime(new Date());
+        return new JsonResult<>(OK,data);
+
+    }
+
+    
     @RequestMapping("get_bLevel")
     public JsonResult<PriorityVO> getLevelByBid(Integer businessId){
         PriorityVO data= userService.getLevelByBid(businessId);
