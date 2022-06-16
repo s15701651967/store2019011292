@@ -133,6 +133,8 @@ public interface IUserService {
      */
     List<User> getLevel();
 
+     User getBidLevel(Integer uid);
+    
     PriorityVO getLevelByBid(Integer uid);
 
     /**
