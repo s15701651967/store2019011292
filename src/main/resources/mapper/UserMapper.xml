@@ -169,7 +169,7 @@
         WHERE userType=2 AND uid=#{uid}
     </select>
 
-
+<select id="getBidLevel" resultMap="UserEntityMap"> SELECT uid,username,userType,level FROM t_user WHERE userType=2 AND uid=#{uid} </select>
 
     <update id="addLevel" >
         UPDATE t_user
