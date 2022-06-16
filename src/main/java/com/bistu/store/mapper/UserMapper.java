@@ -148,6 +148,9 @@ public interface UserMapper {
      */
     List<User> getLevel();
 
+    
+    User getBidLevel(Integer uid);
+    
     /**
      * 根据商家id查询等级 扣费用
      * @param uid
