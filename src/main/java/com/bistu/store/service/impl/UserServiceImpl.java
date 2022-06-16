@@ -236,6 +236,12 @@ public class UserServiceImpl implements IUserService {
         return user;
     }
 
+       @Override
+    public User getBidLevel(Integer uid) {
+        User user=userMapper.getBidLevel(uid);
+        return user;
+    }
+    
     @Override
     public PriorityVO getLevelByBid(Integer uid) {
         PriorityVO user=userMapper.getLevelByBid(uid);
